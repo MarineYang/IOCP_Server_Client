@@ -1,0 +1,12 @@
+﻿  iocpclass.cpp
+c:\users\marineyang1725\source\repos\iocp_server\iocp_server\iocpclass.cpp(30): warning C4996: 'gethostbyname': Use getaddrinfo() or GetAddrInfoW() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+  c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\winsock2.h(2219): note: 'gethostbyname' 선언을 참조하십시오.
+c:\users\marineyang1725\source\repos\iocp_server\iocp_server\iocpclass.cpp(31): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+  c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\winsock2.h(1849): note: 'inet_ntoa' 선언을 참조하십시오.
+c:\users\marineyang1725\source\repos\iocp_server\iocp_server\iocpclass.cpp(96): warning C4473: 'printf': 서식 문자열에 대한 인수가 충분하게 전달되지 않았습니다.
+  c:\users\marineyang1725\source\repos\iocp_server\iocp_server\iocpclass.cpp(96): note: 자리 표시자 및 해당 매개 변수에는 variadic 인수가 1개 필요하지만 0개가 제공되었습니다.
+  c:\users\marineyang1725\source\repos\iocp_server\iocp_server\iocpclass.cpp(96): note: 누락된 variadic 인수 1이(가) 서식 문자열 '%3u'에 필요합니다.
+c:\users\marineyang1725\source\repos\iocp_server\iocp_server\iocpclass.cpp(186): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+  c:\program files (x86)\windows kits\10\include\10.0.17763.0\um\winsock2.h(1849): note: 'inet_ntoa' 선언을 참조하십시오.
+c:\users\marineyang1725\source\repos\iocp_server\iocp_server\iocpclass.cpp(244): warning C4477: 'printf' : 서식 문자열 '%s'에 'char *' 형식의 인수가 필요하지만 variadic 인수 1의 형식이 'std::string'입니다.
+  iocp_server.vcxproj -> C:\Users\MarineYang1725\source\repos\iocp_server\Debug\iocp_server.exe
