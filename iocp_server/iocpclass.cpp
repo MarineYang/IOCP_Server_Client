@@ -81,7 +81,7 @@ void IOCP_SERVER_CLASS::WorkThread()
 	while ((!m_Shoutdown) == TRUE) {
 		DWORD key;
 		DWORD iosize; 
-		OVERLAP_EX* overlap;
+		OVERLAP_EX *overlap = nullptr;
 
 		BOOL result = GetQueuedCompletionStatus(g_Handle, &iosize, &key, reinterpret_cast<LPOVERLAPPED*>(&overlap), INFINITE);
 
@@ -117,7 +117,7 @@ void IOCP_SERVER_CLASS::WorkThread()
 					m_clients[key]->packet_size = 0;
 					m_clients[key]->previous_size = 0;
 				}
-				else {
+				else { // 패킷이 완성될 때.
 					memcpy(m_clients[key]->packet_buff + m_clients[key]->previous_size, buf_ptr, remained);
 					buf_ptr += remained;
 					m_clients[key]->previous_size += remained;
@@ -187,7 +187,7 @@ void IOCP_SERVER_CLASS::AcceptThread()
 
 		CreateIoCompletionPort(reinterpret_cast<HANDLE>(client_sock), g_Handle, m_playerindex, 0);
 
-		PLAYER_INFO *user = new PLAYER_INFO;
+		SESSION_INFO *user = new SESSION_INFO;
 
 		user->sock = client_sock;
 		user->connection = true;
@@ -195,7 +195,7 @@ void IOCP_SERVER_CLASS::AcceptThread()
 		user->packet_size = 0;
 		user->previous_size = 0;
 		memset(&user->recv_overlap.original_overlapped, 0, sizeof(user->recv_overlap.original_overlapped));
-		user->recv_overlap.operation = OP_SERVER_RECV;
+		user->recv_overlap.ioType = IO_WRITE;
 		user->recv_overlap.wsabuf.buf = reinterpret_cast<char*>(&user->recv_overlap.iocp_buffer);
 		user->recv_overlap.wsabuf.len = sizeof(user->recv_overlap.iocp_buffer);
 
@@ -220,8 +220,8 @@ void IOCP_SERVER_CLASS::SendPacket(unsigned int id, const Packet *packet)
 {
 	OVERLAP_EX* overlap = new OVERLAP_EX;
 	memset(overlap, 0, sizeof(OVERLAP_EX));
-	overlap->operation = OP_SERVER_SEND;
-	overlap->wsabuf.buf = reinterpret_cast<char*>(overlap->operation);
+	overlap->ioType = IO_READ;
+	overlap->wsabuf.buf = reinterpret_cast<char*>(overlap->ioType);
 	overlap->wsabuf.len = packet[0];
 	memcpy(overlap->iocp_buffer, packet, packet[0]);
 

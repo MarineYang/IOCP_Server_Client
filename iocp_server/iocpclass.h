@@ -1,16 +1,22 @@
 #pragma once
 #include "stdafx.h"
-
+typedef enum IO_TYPE
+{
+	IO_READ,
+	IO_WRITE,
+};
 using OVERLAP_EX = struct Overlap_ex {
 	OVERLAPPED original_overlapped;
-	int operation;
+	// int operation;
+	IO_TYPE ioType; // operation
 	WSABUF wsabuf;
 	Packet iocp_buffer[MAX_BUF_SIZE];
 };
 
-using PLAYER_INFO = struct Client_INFO {
+using SESSION_INFO = struct Client_INFO {
 	SOCKET sock;
 	unsigned int id;
+	char ipAddr[16];
 	bool connection;
 	OVERLAP_EX recv_overlap;
 	int packet_size;
@@ -27,7 +33,7 @@ private:
 	vector<thread*> m_worker_thread;
 	bool m_Shoutdown{ false };
 
-	vector<PLAYER_INFO*> m_clients;
+	vector<SESSION_INFO*> m_clients;
 	unsigned int m_playerindex{ UINT_MAX };
 
 public:

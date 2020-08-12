@@ -14,7 +14,7 @@
 // process protocol
 enum PacketProtocolType_Server_ProcessPacketFunction {
 	TEST = 1,		// 받은 패킷 그대로 돌려주기용. ( 보낸 내용이 그대로 돌아오지 않는다면, 클라나 서버에 문제가 있다는 뜻 )
-	KEYINPUT,		// 클라이언트에서 키 입력을 받았을 경우
+	HEARTBEAT,		// 클라이언트 세션 생명주기.
 
 };
 using Packet = unsigned char;
