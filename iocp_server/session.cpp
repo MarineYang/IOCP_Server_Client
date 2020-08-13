@@ -45,7 +45,13 @@ void Session::onClose(bool force)
 {
 	// 세션매니저에서 force = true이면 매니저에서 강제종료.
 	// 그렇지않으면 매니저에서 세션 종료.
-
+	if (force) {
+		SessionManageMent.forceCloseSession(this);
+	}
+	else
+	{
+		SessionManageMent.closeSession(this);
+	}
 }
 
 

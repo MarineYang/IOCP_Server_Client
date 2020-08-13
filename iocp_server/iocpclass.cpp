@@ -72,7 +72,6 @@ void IOCP_SERVER_CLASS::IOCP_Server_SetWork_and_AcceptThread()
 		thread->join();
 		delete thread;
 	}
-
 	acceptThread.join();
 }
 
@@ -91,17 +90,21 @@ void IOCP_SERVER_CLASS::WorkThread()
 				int err_no = WSAGetLastError();
 				IOCP_SERVER_ErrorDisplay("WorkThread, GetQueuedCompletionStatus Error : ", err_no, __LINE__);
 			}
-			closesocket(m_clients[key]->sock);
-			m_clients[key]->connection = false;
+			closesocket(m_Sessions[key]->socket());
+			// m_Sessions[key]->connection = false;
 			printf("[ No. %3u ] Discconected . \n");
 
 			continue;
 		}
 		else if (OP_SERVER_RECV) {
-			Packet *buf_ptr = m_clients[key]->recv_overlap.iocp_buffer;
+			// 소켓을 찾는부분에서 lock 걸자.
+			
+			Packet *buf_ptr = m_Sessions[key]->recv_overlap.iocp_buffer;
 			int remained = iosize;
 			while (0 < remained) {
-				if (0 == m_clients[key]->packet_size) { m_clients[key]->packet_size = buf_ptr[0]; }
+				if (0 == m_Sessions[key]->packet_size) { m_clients[key]->packet_size = buf_ptr[0]; }
+
+
 
 				int required = m_clients[key]->packet_size - m_clients[key]->previous_size;
 
@@ -125,7 +128,7 @@ void IOCP_SERVER_CLASS::WorkThread()
 				}
 			}
 			DWORD flags = 0;
-			int retval = WSARecv(m_clients[key]->sock, &m_clients[key]->recv_overlap.wsabuf, 1, NULL, &flags, &m_clients[key]->recv_overlap.original_overlapped, NULL);
+			int retval = WSARecv(m_Sessions[key]->sock, &m_clients[key]->recv_overlap.wsabuf, 1, NULL, &flags, &m_clients[key]->recv_overlap.original_overlapped, NULL);
 			if (SOCKET_ERROR == retval) {
 				int err_no = WSAGetLastError();
 				if (ERROR_IO_PENDING != err_no) {
@@ -141,6 +144,9 @@ void IOCP_SERVER_CLASS::WorkThread()
 
 void IOCP_SERVER_CLASS::AcceptThread()
 {
+
+	// 소켓 연결할때 세션 연동.
+	// 세션에 버퍼를 만들자.
 	int retval{ 0 };
 
 	// socket() - IPv4 ( AF_INET )
@@ -171,48 +177,48 @@ void IOCP_SERVER_CLASS::AcceptThread()
 
 	while (TRUE == (!m_Shoutdown)) {
 		// accept()
-		struct sockaddr_in clientaddr;
-		int addrlen = sizeof(clientaddr);
-		SOCKET client_sock = WSAAccept(listen_sock, reinterpret_cast<sockaddr *>(&clientaddr), &addrlen, NULL, NULL);
-		if (INVALID_SOCKET == client_sock) {
-			int err_no = WSAGetLastError();
-			IOCP_SERVER_ErrorDisplay("Accept::WSAAccept", err_no, __LINE__);
-			while (true);
-		}
+		//struct sockaddr_in clientaddr;
+		//int addrlen = sizeof(clientaddr);
+		//SOCKET client_sock = WSAAccept(listen_sock, reinterpret_cast<sockaddr *>(&clientaddr), &addrlen, NULL, NULL);
+		//if (INVALID_SOCKET == client_sock) {
+		//	int err_no = WSAGetLastError();
+		//	IOCP_SERVER_ErrorDisplay("Accept::WSAAccept", err_no, __LINE__);
+		//	while (true);
+		//}
 
-		/* DB 관련 login 기능이 여기에 추가되어야 한다. 로그인이 번호가 제대로 맞으면 통과, 아니면 클라이언트 연결을 끊는다. */
+		///* DB 관련 login 기능이 여기에 추가되어야 한다. 로그인이 번호가 제대로 맞으면 통과, 아니면 클라이언트 연결을 끊는다. */
 
-		m_playerindex += 1;
-		printf("[ No. %3u ] Client IP = %s, Port = %d is Connected\n", m_playerindex, inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
+		//m_playerindex += 1;
+		//printf("[ No. %3u ] Client IP = %s, Port = %d is Connected\n", m_playerindex, inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 
-		CreateIoCompletionPort(reinterpret_cast<HANDLE>(client_sock), g_Handle, m_playerindex, 0);
+		//CreateIoCompletionPort(reinterpret_cast<HANDLE>(client_sock), g_Handle, m_playerindex, 0);
 
-		SESSION_INFO *user = new SESSION_INFO;
+		//SESSION_INFO *user = new SESSION_INFO;
 
-		user->sock = client_sock;
-		user->connection = true;
-		user->id = m_playerindex;
-		user->packet_size = 0;
-		user->previous_size = 0;
-		memset(&user->recv_overlap.original_overlapped, 0, sizeof(user->recv_overlap.original_overlapped));
-		user->recv_overlap.ioType = IO_WRITE;
-		user->recv_overlap.wsabuf.buf = reinterpret_cast<char*>(&user->recv_overlap.iocp_buffer);
-		user->recv_overlap.wsabuf.len = sizeof(user->recv_overlap.iocp_buffer);
+		//user->sock = client_sock;
+		//user->connection = true;
+		//user->id = m_playerindex;
+		//user->packet_size = 0;
+		//user->previous_size = 0;
+		//memset(&user->recv_overlap.original_overlapped, 0, sizeof(user->recv_overlap.original_overlapped));
+		//user->recv_overlap.ioType = IO_WRITE;
+		//user->recv_overlap.wsabuf.buf = reinterpret_cast<char*>(&user->recv_overlap.iocp_buffer);
+		//user->recv_overlap.wsabuf.len = sizeof(user->recv_overlap.iocp_buffer);
 
-		// 추가로 데이터가 필요한 경우라면, PLAYER_INFO 구조체 내용을 수정하고,
-		// 추가로 초기화 값이나 불러오는 내용을 대입하여 넣어주어야 한다.
+		//// 추가로 데이터가 필요한 경우라면, PLAYER_INFO 구조체 내용을 수정하고,
+		//// 추가로 초기화 값이나 불러오는 내용을 대입하여 넣어주어야 한다.
 
-		m_clients.push_back(move(user));
+		//m_clients.push_back(move(user));
 
-		// 클라이언트에서 응답오길 기다리기
-		DWORD flags{ 0 };
-		retval = WSARecv(client_sock, &m_clients[m_playerindex]->recv_overlap.wsabuf, 1, NULL, &flags, &m_clients[m_playerindex]->recv_overlap.original_overlapped, NULL);
-		if (SOCKET_ERROR == retval) {
-			int err_no = WSAGetLastError();
-			if (ERROR_IO_PENDING != err_no) {
-				IOCP_SERVER_ErrorDisplay("Accept::WSARecv", err_no, __LINE__);
-			}
-		}
+		//// 클라이언트에서 응답오길 기다리기
+		//DWORD flags{ 0 };
+		//retval = WSARecv(client_sock, &m_clients[m_playerindex]->recv_overlap.wsabuf, 1, NULL, &flags, &m_clients[m_playerindex]->recv_overlap.original_overlapped, NULL);
+		//if (SOCKET_ERROR == retval) {
+		//	int err_no = WSAGetLastError();
+		//	if (ERROR_IO_PENDING != err_no) {
+		//		IOCP_SERVER_ErrorDisplay("Accept::WSARecv", err_no, __LINE__);
+		//	}
+		//}
 	}
 }
 

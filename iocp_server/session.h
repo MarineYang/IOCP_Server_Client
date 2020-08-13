@@ -7,9 +7,23 @@ struct SOCKET_DATA {
 	SOCKADDR_IN addrInfo_;
 };
 
-enum {
-	SESSION_TYPE_CLIENT,
+
+typedef enum IO_TYPE
+{
+	IO_READ,
+	IO_WRITE,
 };
+using OVERLAP_EX = struct Overlap_ex {
+	OVERLAPPED original_overlapped;
+	// int operation;
+	IO_TYPE ioType; // operation
+	WSABUF wsabuf;
+	Packet iocp_buffer[MAX_BUF_SIZE];
+};
+
+//enum {
+//	SESSION_TYPE_CLIENT,
+//};
 
 class Session
 {

@@ -31,9 +31,11 @@ bool SessionManager::addSession(Session * session)
 	auto findSession = std::find(sessionList_.begin(), sessionList_.end(), session);
 	if (findSession != sessionList_.end())
 	{
+		mutex_.unlock();
 		return false;
 	}
 	if (sessiontCount_ > maxConnCount_) {
+		mutex_.unlock();
 		return false;
 	}
 
@@ -53,6 +55,7 @@ bool SessionManager::closeSession(Session * session)
 {
 	mutex_.lock();
 	if (session == nullptr) {
+		mutex_.unlock();
 		return false;
 	}
 	auto findSession = std::find(sessionList_.begin(), sessionList_.end(), session);
@@ -63,8 +66,10 @@ bool SessionManager::closeSession(Session * session)
 		sessionList_.remove(deleteSession);
 		--sessiontCount_;
 		SAFE_DELETE(deleteSession);
+		mutex_.unlock();
 		return true;
 	}
+	mutex_.unlock();
 	return false;
 }
 
@@ -72,6 +77,7 @@ void SessionManager::forceCloseSession(Session * session)
 {
 	mutex_.lock();
 	if (!session) {
+		mutex_.unlock();
 		return;
 	}
 	LINGER linger;
