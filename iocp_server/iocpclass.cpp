@@ -82,6 +82,7 @@ void IOCP_SERVER_CLASS::WorkThread()
 		DWORD iosize; 
 		OVERLAP_EX *overlap = nullptr;
 
+		// 2번 호출이 될 가능성이 있다.
 		BOOL result = GetQueuedCompletionStatus(g_Handle, &iosize, &key, reinterpret_cast<LPOVERLAPPED*>(&overlap), INFINITE);
 
 		// 접속이 끊겼을 때 처리
@@ -103,28 +104,32 @@ void IOCP_SERVER_CLASS::WorkThread()
 			int remained = iosize;
 			while (0 < remained) {
 				if (0 == m_Sessions[key]->GetPacketSize()) { m_Sessions[key]->SetPacketSize(buf_ptr[0]); }
+				else
+				{
+					int required = m_Sessions[key]->GetPacketSize() - m_Sessions[key]->GetPreviousSize();
 
-				int required = m_Sessions[key]->GetPacketSize() - m_Sessions[key]->GetPreviousSize();
+					if (remained >= required) {
+						memcpy(m_Sessions[key]->GetOverlapped().iocp_buffer + m_Sessions[key]->GetPreviousSize(), buf_ptr, required);
 
-				if (remained >= required) {
-					memcpy(m_Sessions[key]->GetOverlapped().iocp_buffer + m_Sessions[key]->GetPreviousSize(), buf_ptr, required);
+						// 아래 함수에서 패킷을 처리하게 된다.
+						IOCP_SERVER_ProcessPacket(key, m_Sessions[key]->GetOverlapped().iocp_buffer);
 
-					// 아래 함수에서 패킷을 처리하게 된다.
-					IOCP_SERVER_ProcessPacket(key, m_Sessions[key]->GetOverlapped().iocp_buffer);
+						buf_ptr += required;
+						remained -= required;
 
-					buf_ptr += required;
-					remained -= required;
-
-					m_Sessions[key]->SetPacketSize(0);
-					m_Sessions[key]->SetPreviosSize(0);
-				}
-				else { // 패킷이 완성될 때.
-					memcpy(m_Sessions[key]->GetOverlapped().iocp_buffer + m_Sessions[key]->GetPreviousSize(), buf_ptr, remained);
-					buf_ptr += remained;
-					m_Sessions[key]->SetPreviosSize( m_Sessions[key]->GetPreviousSize() + remained);
-					remained = 0;
+						m_Sessions[key]->SetPacketSize(0);
+						m_Sessions[key]->SetPreviosSize(0);
+					}
+					else { // 패킷이 완성될 때.
+						memcpy(m_Sessions[key]->GetOverlapped().iocp_buffer + m_Sessions[key]->GetPreviousSize(), buf_ptr, remained);
+						buf_ptr += remained;
+						m_Sessions[key]->SetPreviosSize(m_Sessions[key]->GetPreviousSize() + remained);
+						remained = 0;
+					}
 				}
 			}
+
+			// 이새끼 함수로 빼자.
 			DWORD flags = 0;
 			int retval = WSARecv(m_Sessions[key]->socket(), &m_Sessions[key]->GetOverlapped().wsabuf, 1, NULL, &flags, &m_Sessions[key]->GetOverlapped().original_overlapped, NULL);
 			if (SOCKET_ERROR == retval) {
@@ -217,6 +222,8 @@ void IOCP_SERVER_CLASS::AcceptThread()
 		//		IOCP_SERVER_ErrorDisplay("Accept::WSARecv", err_no, __LINE__);
 		//	}
 		//}
+
+		// addSession
 	}
 }
 
