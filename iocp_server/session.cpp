@@ -3,8 +3,10 @@
 
 Session::Session()
 {
-	type_ = SESSION_TYPE_CLIENT;
 	this->updateHeartbeat();
+
+	// overlapped는 처음에 항상 밀어주고 사용.
+	ZeroMemory(&recv_overlap.original_overlapped, sizeof(recv_overlap.original_overlapped));
 }
 
 Session::~Session()
@@ -70,6 +72,21 @@ void Session::setSessionID(unsigned int id)
 	id_ = id;
 }
 
+OVERLAP_EX & Session::GetOverlapped()
+{
+	return recv_overlap;
+}
+
+int Session::GetPacketSize()
+{
+	return packet_size;
+}
+
+int Session::GetPreviousSize()
+{
+	return previous_size;
+}
+
 int8_t Session::GetSessionType()
 {
 	return type_;
@@ -83,4 +100,14 @@ time_t Session::Heartbeat()
 void Session::updateHeartbeat()
 {
 	lastHeartbeat_ = system_clock::to_time_t(system_clock::now());
+}
+
+void Session::SetPacketSize(int size)
+{
+	packet_size = size;
+}
+
+void Session::SetPreviosSize(int size)
+{
+	previous_size = size;
 }

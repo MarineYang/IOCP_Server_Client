@@ -32,6 +32,9 @@ protected:
 	unsigned int id_;
 	int8_t	type_;
 	time_t lastHeartbeat_;
+	OVERLAP_EX recv_overlap;
+	int packet_size;
+	int previous_size;
 
 	bool setSocketOpt();
 
@@ -50,9 +53,18 @@ public:
 	int GetSessionId();
 	void setSessionID(unsigned int id);
 
+	OVERLAP_EX& GetOverlapped();
+	int GetPacketSize();
+	int GetPreviousSize();
+
 	int8_t GetSessionType();
 
 	time_t Heartbeat();
 	void updateHeartbeat();
+
+
+	void SetPacketSize(int size);
+	void SetPreviosSize(int size);
+
 
 };

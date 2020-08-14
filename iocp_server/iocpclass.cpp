@@ -99,36 +99,34 @@ void IOCP_SERVER_CLASS::WorkThread()
 		else if (OP_SERVER_RECV) {
 			// 소켓을 찾는부분에서 lock 걸자.
 			
-			Packet *buf_ptr = m_Sessions[key]->recv_overlap.iocp_buffer;
+			Packet *buf_ptr = m_Sessions[key]->GetOverlapped().iocp_buffer;
 			int remained = iosize;
 			while (0 < remained) {
-				if (0 == m_Sessions[key]->packet_size) { m_clients[key]->packet_size = buf_ptr[0]; }
+				if (0 == m_Sessions[key]->GetPacketSize()) { m_Sessions[key]->SetPacketSize(buf_ptr[0]); }
 
-
-
-				int required = m_clients[key]->packet_size - m_clients[key]->previous_size;
+				int required = m_Sessions[key]->GetPacketSize() - m_Sessions[key]->GetPreviousSize();
 
 				if (remained >= required) {
-					memcpy(m_clients[key]->packet_buff + m_clients[key]->previous_size, buf_ptr, required);
+					memcpy(m_Sessions[key]->GetOverlapped().iocp_buffer + m_Sessions[key]->GetPreviousSize(), buf_ptr, required);
 
 					// 아래 함수에서 패킷을 처리하게 된다.
-					IOCP_SERVER_ProcessPacket(key, m_clients[key]->packet_buff);
+					IOCP_SERVER_ProcessPacket(key, m_Sessions[key]->GetOverlapped().iocp_buffer);
 
 					buf_ptr += required;
 					remained -= required;
 
-					m_clients[key]->packet_size = 0;
-					m_clients[key]->previous_size = 0;
+					m_Sessions[key]->SetPacketSize(0);
+					m_Sessions[key]->SetPreviosSize(0);
 				}
 				else { // 패킷이 완성될 때.
-					memcpy(m_clients[key]->packet_buff + m_clients[key]->previous_size, buf_ptr, remained);
+					memcpy(m_Sessions[key]->GetOverlapped().iocp_buffer + m_Sessions[key]->GetPreviousSize(), buf_ptr, remained);
 					buf_ptr += remained;
-					m_clients[key]->previous_size += remained;
+					m_Sessions[key]->SetPreviosSize( m_Sessions[key]->GetPreviousSize() + remained);
 					remained = 0;
 				}
 			}
 			DWORD flags = 0;
-			int retval = WSARecv(m_Sessions[key]->sock, &m_clients[key]->recv_overlap.wsabuf, 1, NULL, &flags, &m_clients[key]->recv_overlap.original_overlapped, NULL);
+			int retval = WSARecv(m_Sessions[key]->socket(), &m_Sessions[key]->GetOverlapped().wsabuf, 1, NULL, &flags, &m_Sessions[key]->GetOverlapped().original_overlapped, NULL);
 			if (SOCKET_ERROR == retval) {
 				int err_no = WSAGetLastError();
 				if (ERROR_IO_PENDING != err_no) {
@@ -232,7 +230,7 @@ void IOCP_SERVER_CLASS::SendPacket(unsigned int id, const Packet *packet)
 	memcpy(overlap->iocp_buffer, packet, packet[0]);
 
 	DWORD flags{ 0 };
-	int returnValue = WSASend(m_clients[id]->sock, &overlap->wsabuf, 1, NULL, flags, &overlap->original_overlapped, NULL);
+	int returnValue = WSASend(m_Sessions[id]->socket(), &overlap->wsabuf, 1, NULL, flags, &overlap->original_overlapped, NULL);
 	if (returnValue == SOCKET_ERROR) {
 		if (WSAGetLastError() == ERROR_IO_PENDING) {
 			IOCP_SERVER_ErrorDisplay("SendPacket, WSASend Error : ", WSAGetLastError(), __LINE__);
